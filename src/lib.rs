@@ -13,4 +13,6 @@ pub use traits::{BoxIterator, Correction, Corrector, Tokenizer, DefaultTokenizer
 mod benches;
 pub use benches::{CorrectorBenches, edits};
 
+pub mod new_edits;
+
 mod macros;
