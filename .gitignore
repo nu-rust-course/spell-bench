@@ -1,3 +1,19 @@
-/target
-**/*.rs.bk
+# Cargo/Rust build directory:
+target/
+
+# Cargo version lock:
 Cargo.lock
+
+# rustfmt backups:
+**/*.rs.bk
+
+# CMake build directories:
+cmake-build-*/
+build/
+build.*/
+
+# CLion configuration:
+.idea/
+
+# Assembly output:
+*.s
