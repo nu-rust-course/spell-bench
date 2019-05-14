@@ -1,5 +1,25 @@
 #[doc(hidden)]
 #[macro_export]
+macro_rules! __edit_hamlet {
+
+    ( $name:ident => $e:expr, N = $n:expr ) => {
+
+        #[bench]
+        fn $name(bench: &mut $crate::Bencher) {
+            use __detail::*;
+            <T as CB>::check_hamlet_with_edits($n, $e, bench);
+        }
+
+    };
+
+    ( $name:ident => $e:expr ) => {
+        $crate::__edit_hamlet!($name => $e, N = N);
+    };
+
+}
+
+#[doc(hidden)]
+#[macro_export]
 macro_rules! __check_hamlet {
     ( $name:ident ) => {
 
@@ -117,6 +137,7 @@ macro_rules! spell_bench {
         $v mod $m {
             $(#![$inner])*
 
+            use $crate::__edit_hamlet as edit_hamlet;
             use $crate::__bench_corrector as bench_corrector;
             use $crate::__bench_parser as bench_parser;
 
