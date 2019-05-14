@@ -2,18 +2,18 @@
 #[macro_export]
 macro_rules! __edit_hamlet {
 
-    ( $name:ident => $e:expr, N = $n:expr ) => {
+    ( $name:ident : $e:expr, N = $n:expr ) => {
 
         #[bench]
         fn $name(bench: &mut $crate::Bencher) {
             use __detail::*;
-            <T as CB>::check_hamlet_with_edits($n, $e, bench);
+            <T as CB>::check_hamlet_with_edits($n, &$e, bench);
         }
 
     };
 
-    ( $name:ident => $e:expr ) => {
-        $crate::__edit_hamlet!($name => $e, N = N);
+    ( $name:ident : $e:expr ) => {
+        $crate::__edit_hamlet!($name : $e, N = N);
     };
 
 }
@@ -79,19 +79,19 @@ macro_rules! __bench_corrector {
             use $crate::edits::*;
             use super::__detail::*;
 
-            hamlet!(first_1, N, LSkip(1));
-            hamlet!(first_2, N, LSkip(2));
-            hamlet!(first_3, N, LSkip(3));
-            hamlet!(last_1, N, RSkip(1));
-            hamlet!(last_2, N, RSkip(2));
-            hamlet!(first_1_last_1, N, LSkip(1).and(RSkip(1)));
+            hamlet!(first_1, N, Edit::delete(0));
+//            hamlet!(first_2, N, LSkip(2));
+//            hamlet!(first_3, N, LSkip(3));
+//            hamlet!(last_1, N, RSkip(1));
+//            hamlet!(last_2, N, RSkip(2));
+//            hamlet!(first_1_last_1, N, LSkip(1).and(RSkip(1)));
 
-            hamlet!(pre_a, N, Pre("a"));
-            hamlet!(post_t, N, Post("t"));
-            hamlet!(replace_first_z, N, LSkip(1).and(Pre("z")));
-            hamlet!(transpose_0, N, Transpose(0));
-            hamlet!(transpose_1, N, Transpose(1));
-            hamlet!(transpose_2, N, Transpose(2));
+//            hamlet!(pre_a, N, Pre("a"));
+//            hamlet!(post_t, N, Post("t"));
+//            hamlet!(replace_first_z, N, LSkip(1).and(Pre("z")));
+//            hamlet!(transpose_0, N, Transpose(0));
+//            hamlet!(transpose_1, N, Transpose(1));
+//            hamlet!(transpose_2, N, Transpose(2));
 
         }
 

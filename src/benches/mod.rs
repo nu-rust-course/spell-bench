@@ -1,10 +1,7 @@
-use crate::{Corrector, Tokenizer};
+use crate::{Corrector, Tokenizer, Edit};
 
 mod bencher_trait;
 pub use bencher_trait::Bencher;
-
-pub mod edits;
-pub use edits::Edit;
 
 pub const HAMLET: &[u8] = include_bytes!("../../resources/hamlet.txt");
 
@@ -14,12 +11,12 @@ pub trait CorrectorBenches: Corrector {
     }
 
     fn check_bytes(n: usize, bytes: &[u8], bench: &mut impl Bencher) {
-        Self::check_bytes_with_edits(n, bytes, edits::Identity, bench);
+        Self::check_bytes_with_edits(n, bytes, &Edit::identity(), bench);
     }
 
     fn check_bytes_with_edits(n: usize,
                               bytes: &[u8],
-                              mut e: impl Edit,
+                              e: &Edit,
                               bench: &mut impl Bencher) {
 
         let corrector = Self::from_corpus(bytes);
@@ -29,7 +26,7 @@ pub trait CorrectorBenches: Corrector {
             .into_iter()
             .cycle()
             .skip(skip)
-            .filter_map(|word| e.apply(word.into()))
+            .filter_map(|word| e.apply(word))
             .take(n)
             .collect::<Vec<_>>();
 
@@ -43,7 +40,7 @@ pub trait CorrectorBenches: Corrector {
         Self::read_bytes(HAMLET, bench);
     }
 
-    fn check_hamlet_with_edits(n: usize, e: impl Edit, bench: &mut impl Bencher) {
+    fn check_hamlet_with_edits(n: usize, e: &Edit, bench: &mut impl Bencher) {
         Self::check_bytes_with_edits(n, HAMLET, e, bench);
     }
 
