@@ -69,6 +69,9 @@ macro_rules! __bench_corrector {
             hamlet!(pre_a, N, Pre("a"));
             hamlet!(post_t, N, Post("t"));
             hamlet!(replace_first_z, N, LSkip(1).and(Pre("z")));
+            hamlet!(transpose_0, N, Transpose(0));
+            hamlet!(transpose_1, N, Transpose(1));
+            hamlet!(transpose_2, N, Transpose(2));
 
         }
 

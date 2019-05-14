@@ -82,3 +82,21 @@ impl Edit for Post {
 pub fn char_offsets<'a>(s: &'a str) -> impl DoubleEndedIterator<Item = usize> + 'a {
     s.char_indices().map(|p| p.0).chain(iter::once(s.len()))
 }
+
+pub struct Transpose(pub usize);
+
+impl Edit for Transpose {
+    fn apply<'a>(&mut self, word: Cow<'a, str>) -> Option<Cow<'a, str>> {
+        let mut result = String::with_capacity(word.len());
+        let mut chars = word.chars();
+
+        result.extend(chars.by_ref().take(self.0));
+        let (i, j) = (chars.next()?, chars.next()?);
+        result.push(j);
+        result.push(i);
+        result.extend(chars);
+
+        Some(result.into())
+    }
+}
+
