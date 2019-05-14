@@ -118,13 +118,13 @@ macro_rules! spell_bench {
             use $crate::__bench_parser as bench_parser;
 
             mod __detail {
-                pub use super::Corrector as T;
-                pub use $crate::{
+                pub (super) use $crate::{
                     CorrectorBenches as CB,
                     __check_hamlet as hamlet,
                 };
 
-                pub const N: usize = super::N;
+                pub (super) type T = super::Corrector;
+                pub (super) const N: usize = super::N;
             }
 
             $crate::__process_items!($($i)*);

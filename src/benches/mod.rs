@@ -6,7 +6,7 @@ pub use bencher_trait::Bencher;
 pub mod edits;
 pub use edits::Edit;
 
-pub static HAMLET: &[u8] = include_bytes!("../../resources/hamlet.txt");
+pub const HAMLET: &[u8] = include_bytes!("../../resources/hamlet.txt");
 
 pub trait CorrectorBenches: Corrector {
     fn read_bytes(bytes: &[u8], bench: &mut impl Bencher) {
