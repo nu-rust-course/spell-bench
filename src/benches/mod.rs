@@ -1,33 +1,12 @@
-use bencher;
 use crate::{Corrector, Tokenizer};
 
-const HAMLET: &[u8] = include_bytes!("../resources/hamlet.txt");
+mod bencher_trait;
+pub use bencher_trait::Bencher;
 
-pub trait Bencher {
-    fn iter<T, F>(&mut self, f: F)
-    where
-        F: FnMut() -> T;
-}
+pub mod edits;
+pub use edits::Edit;
 
-impl Bencher for bencher::Bencher {
-    fn iter<T, F>(&mut self, f: F)
-    where
-        F: FnMut() -> T {
-
-        bencher::Bencher::iter(self, f)
-    }
-}
-
-impl Bencher for usize {
-    fn iter<T, F>(&mut self, mut f: F)
-    where
-        F: FnMut() -> T {
-
-        for _ in 0 .. *self {
-            f();
-        }
-    }
-}
+pub static HAMLET: &[u8] = include_bytes!("../../resources/hamlet.txt");
 
 pub trait CorrectorBenches: Corrector {
     fn read_bytes(bytes: &[u8], bench: &mut impl Bencher) {
@@ -35,24 +14,43 @@ pub trait CorrectorBenches: Corrector {
     }
 
     fn check_bytes(n: usize, bytes: &[u8], bench: &mut impl Bencher) {
-        let hamlet_words = Self::Tokens::tokenize(bytes);
+        Self::check_bytes_with_edits(n, bytes, edits::Identity, bench);
+    }
+
+    fn check_bytes_with_edits(n: usize,
+                              bytes: &[u8],
+                              mut e: impl Edit,
+                              bench: &mut impl Bencher) {
+
         let corrector = Self::from_corpus(bytes);
+        let words = Self::Tokens::tokenize(bytes);
+        let skip = words.len() / 2;
+        let problem = words
+            .into_iter()
+            .cycle()
+            .skip(skip)
+            .filter_map(|word| e.apply(word.into()))
+            .take(n)
+            .collect::<Vec<_>>();
 
         bench.iter(move ||
-            hamlet_words.iter()
-                        .cycle()
-                        .take(n)
-                        .for_each(|word|
-                            assert!(corrector.suggest(word).is_correct())));
+            problem.iter()
+                .filter(|word| corrector.suggest(word).is_suggestion())
+                .count())
     }
 
     fn read_hamlet(bench: &mut impl Bencher) {
         Self::read_bytes(HAMLET, bench);
     }
 
+    fn check_hamlet_with_edits(n: usize, e: impl Edit, bench: &mut impl Bencher) {
+        Self::check_bytes_with_edits(n, HAMLET, e, bench);
+    }
+
     fn check_hamlet(n: usize, bench: &mut impl Bencher) {
         Self::check_bytes(n, HAMLET, bench);
     }
+
 }
 
 impl<C: Corrector> CorrectorBenches for C { }
