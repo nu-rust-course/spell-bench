@@ -86,16 +86,13 @@ pub trait Tokenizer {
         corpus.lines()
               .fold(Vec::new(), |mut result, line| {
                   result.extend(Self::split_tokens(&line.unwrap())
-                      .map(Self::trim_word)
                       .filter(|w| !Self::is_bad_word(w))
                       .map(Self::finish_word));
                   result
               })
     }
 
-    /// Splits a line of text into tokens. It’s okay if the resulting
-    /// tokens include extra punctuation on the edges, as `trim_word`
-    /// will have a chance to remove that later.
+    /// Splits a line of text into tokens.
     ///
     /// The default implementation just calls `str::split_whitespace`.
     fn split_tokens(line: &str) -> BoxIterator<&str> {
@@ -110,28 +107,10 @@ pub trait Tokenizer {
         word.is_empty()
     }
 
-    /// Trims characters from the ends of the word if `is_trim_char`
-    /// returns `true` for them.
-    ///
-    /// Default implementation calls `str::trim_matches` using `is_trim_char`
-    /// as the predicate.
-    fn trim_word(untrimmed: &str) -> &str {
-        untrimmed.trim_matches(Self::is_trim_char)
-    }
-
-    /// Returns `true` for characters that should be trimmed from the
-    /// ends of the word.
-    ///
-    /// Default implementation returns `false` for alphanumerics and
-    /// `true` otherwise.
-    fn is_trim_char(c: char) -> bool {
-        !c.is_alphanumeric()
-    }
-
     /// Constructs an owned string for the word while performing any
     /// final transformations that cannot be performed on a slice, for
     /// example changing the case. You can also filter characters from
-    /// inside the word here.
+    /// the word here.
     ///
     /// Default implementation calls `str::to_lowercase`.
     fn finish_word(word: &str) -> String {
