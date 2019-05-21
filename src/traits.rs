@@ -11,12 +11,14 @@ pub enum Correction<'a> {
 }
 
 macro_rules! matches {
+
     ( $e:expr, $p:pat ) => {
         match $e {
             $p => true,
-            _ => false,
+            _  => false,
         }
     };
+
 }
 
 impl<'a> Correction<'a> {
@@ -185,6 +187,6 @@ mod tests {
         let the_word = "bees".to_owned();
         assert_eq!( the_word.suggest("bees"), Correct );
         assert_eq!( the_word.suggest("bee"),  Suggestion("bees".into()) );
-        assert_eq!(the_word.suggest("eels"), Uncorrectable);
+        assert_eq!( the_word.suggest("eels"), Uncorrectable );
     }
 }
