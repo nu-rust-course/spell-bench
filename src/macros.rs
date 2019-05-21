@@ -68,23 +68,22 @@ macro_rules! __bench_parser {
 macro_rules! __bench_corrector {
     ( ) => {
 
-        mod words_from_hamlet {
-            use super::__detail::*;
-
-            hamlet!(_10, 10);
-            hamlet!(_100, 100);
-        }
+//        mod words_from_hamlet {
+//            use super::__detail::*;
+//
+//            hamlet!(_10, 10);
+//            hamlet!(_100, 100);
+//        }
 
         mod edit_hamlet {
-            use $crate::edits::*;
-            use super::__detail::*;
+            use $crate::Edit;
+            use super::{edit_hamlet, __detail};
 
-            hamlet!(first_1, N, Edit::delete(0));
-//            hamlet!(first_2, N, LSkip(2));
-//            hamlet!(first_3, N, LSkip(3));
-//            hamlet!(last_1, N, RSkip(1));
-//            hamlet!(last_2, N, RSkip(2));
-//            hamlet!(first_1_last_1, N, LSkip(1).and(RSkip(1)));
+            edit_hamlet!(first_1: Edit::delete(0));
+            edit_hamlet!(first_2: Edit::delete(0).then(Edit::delete(0)));
+            edit_hamlet!(last_1: Edit::delete(-2));
+            edit_hamlet!(del_last_2: Edit::delete(-2).then(Edit::delete(-2)));
+            edit_hamlet!(del_first_last: Edit::delete(0).then(Edit::delete(-2)));
 
 //            hamlet!(pre_a, N, Pre("a"));
 //            hamlet!(post_t, N, Post("t"));
@@ -98,6 +97,7 @@ macro_rules! __bench_corrector {
     };
 }
 
+#[doc(hidden)]
 #[macro_export]
 macro_rules! __process_items {
 

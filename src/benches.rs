@@ -1,11 +1,12 @@
 use crate::{Corrector, Tokenizer, Edit};
 
-mod bencher_trait;
-pub use bencher_trait::Bencher;
+/// The text of hamlet. Should be entirely Roman letters and space.
+pub const HAMLET: &[u8] = include_bytes!("../resources/hamlet.txt");
 
-pub const HAMLET: &[u8] = include_bytes!("../../resources/hamlet.txt");
-
+/// Extension trait that implements several benchmark possibilities for
+/// any `Corrector`.
 pub trait CorrectorBenches: Corrector {
+
     fn read_bytes(bytes: &[u8], bench: &mut impl Bencher) {
         bench.iter(move || Self::from_corpus(bytes))
     }
@@ -49,6 +50,34 @@ pub trait CorrectorBenches: Corrector {
     }
 
 }
+
+/// Trait to let us mock `test::Bencher` for testing benchmarks.
+pub trait Bencher {
+    fn iter<T, F>(&mut self, f: F)
+    where
+        F: FnMut() -> T;
+}
+
+impl Bencher for test::Bencher {
+    fn iter<T, F>(&mut self, f: F)
+    where
+        F: FnMut() -> T {
+
+        test::Bencher::iter(self, f)
+    }
+}
+
+impl Bencher for usize {
+    fn iter<T, F>(&mut self, mut f: F)
+    where
+        F: FnMut() -> T {
+
+        for _ in 0 .. *self {
+            f();
+        }
+    }
+}
+
 
 impl<C: Corrector> CorrectorBenches for C { }
 

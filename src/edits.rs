@@ -1,5 +1,6 @@
 use std::iter;
 
+/// An edit to a string.
 #[derive(Debug, Clone)]
 pub struct Edit(EditInner);
 
@@ -16,7 +17,7 @@ enum EditInner {
 use self::EditInner::*;
 
 impl EditInner {
-    pub fn apply<S: AsRef<str>>(&self, word: S) -> Option<String> {
+    fn apply<S: AsRef<str>>(&self, word: S) -> Option<String> {
         let word = word.as_ref();
 
         match self {
@@ -53,22 +54,32 @@ impl EditInner {
 }
 
 impl Edit {
+    /// Applies an edit to a string, either returning the edited string,
+    /// or `None` if the edit doesn’t apply.
     pub fn apply<S: AsRef<str>>(&self, word: S) -> Option<String> {
         self.0.apply(word)
     }
 
+    /// Composes two edits in order.
+    pub fn then(self, other: Self) -> Self {
+        Edit(Sequence(Box::new(self.0), Box::new(other.0)))
+    }
+
+    /// Creates the identity edit.
     pub fn identity() -> Self {
         Edit(Identity)
     }
 
+    /// An edit that deletes the character at the given index.
     pub fn delete(index: isize) -> Self {
         Edit(Delete(Index(index)))
     }
 
+    /// An edit that deletes the character at the given index from
+    /// the end.
     pub fn delete_rev(index: isize) -> Self {
         Self::delete(-index)
     }
-
 
     pub fn insert(index: isize, c: char) -> Self {
         Edit(Insert(Index(index), c))
@@ -92,10 +103,6 @@ impl Edit {
 
     pub fn transpose_rev(index: isize) -> Self {
         Self::transpose(-index)
-    }
-
-    pub fn then(self, other: Self) -> Self {
-        Edit(Sequence(Box::new(self.0), Box::new(other.0)))
     }
 }
 
