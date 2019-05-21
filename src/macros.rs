@@ -120,6 +120,30 @@ macro_rules! __process_items {
 
 }
 
+/// Runs spell checker benchmarks.
+///
+/// # Example
+///
+/// ```ignore
+/// spell_bench::spell_bench! {
+///     mod benches {
+///         const N: usize = 10;
+///         use super::Corrector;
+///         use spell_bench::Edit;
+///
+///         bench_corrector!();
+///
+///         mod deletions {
+///             use super::*;
+///             edit_hamlet!(first_1: Edit::delete(0));
+///             edit_hamlet!(first_2: Edit::delete(0).then(Edit::delete(0)));
+///             edit_hamlet!(last_1: Edit::delete(-2));
+///             edit_hamlet!(del_last_2: Edit::delete(-2).then(Edit::delete(-2)));
+///             edit_hamlet!(del_first_last: Edit::delete(0).then(Edit::delete(-2)));
+///         }
+///     }
+/// }
+/// ```
 #[macro_export]
 macro_rules! spell_bench {
     {
