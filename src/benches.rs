@@ -58,6 +58,7 @@ pub trait Bencher {
         F: FnMut() -> T;
 }
 
+#[cfg(feature = "nightly")]
 impl Bencher for test::Bencher {
     fn iter<T, F>(&mut self, f: F)
     where
@@ -67,17 +68,19 @@ impl Bencher for test::Bencher {
     }
 }
 
-impl Bencher for usize {
+#[derive(Clone, Debug)]
+pub struct MockBencher(pub usize);
+
+impl Bencher for MockBencher {
     fn iter<T, F>(&mut self, mut f: F)
     where
         F: FnMut() -> T {
 
-        for _ in 0 .. *self {
+        for _ in 0 .. self.0 {
             f();
         }
     }
 }
-
 
 impl<C: Corrector> CorrectorBenches for C { }
 
@@ -86,6 +89,7 @@ mod tests {
     use std::io::BufRead;
     use crate::{Corrector, Correction, DefaultTokenizer};
     use super::CorrectorBenches;
+    use crate::benches::MockBencher;
 
     #[test]
     fn allow_everything() {
@@ -103,6 +107,6 @@ mod tests {
             type Tokens = DefaultTokenizer;
         }
 
-        <Always<Correction>>::check_bytes(100, super::HAMLET, &mut 1);
+        <Always<Correction>>::check_bytes(100, super::HAMLET, &mut MockBencher(1));
     }
 }

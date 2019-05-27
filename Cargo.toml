@@ -1,6 +1,12 @@
 [package]
 name = "spell-bench"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jesse A. Tov <jesse.tov@gmail.com>"]
+build = "build.rs"
 edition = "2018"
 
+[features]
+unstable = []
+
+[build-dependencies]
+rustc_version = "0.2"
