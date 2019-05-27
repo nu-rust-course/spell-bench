@@ -81,7 +81,6 @@ mod integration {
 }
 
 #[cfg(feature = "nightly")]
-
 spell_bench::spell_bench! {
     mod single_string_benches {
         use super::implementation::SingleStringModel as Corrector;
