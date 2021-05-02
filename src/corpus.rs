@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub struct Corpus<'a, 'b> {
     pub name: &'a str,
     pub text: &'b str,
