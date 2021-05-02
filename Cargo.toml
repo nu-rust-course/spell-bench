@@ -8,5 +8,8 @@ edition = "2018"
 [features]
 unstable = []
 
+[dependencies]
+lazy_static = "1.4"
+
 [build-dependencies]
 rustc_version = "0.2"
