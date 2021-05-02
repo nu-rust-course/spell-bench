@@ -23,9 +23,8 @@ pub mod corpus {
     lazy_static! {
         pub static ref HAMLET: &'static str = str::from_utf8(HAMLET_BYTES).unwrap();
         pub static ref DICT: &'static str = str::from_utf8(DICT_BYTES).unwrap();
+        pub static ref SMALL: &'static str = "hello rust goodbye rust";
     }
-
-    pub const SMALL: &str = "hello rust goodbye rust";
 }
 
 mod traits;
