@@ -13,6 +13,9 @@ pub const DICT: Corpus = Corpus::from_str("dict",
     include_str!("../resources/dict.txt"));
 
 pub const SMALL: Corpus = Corpus::from_str("small",
+    include_str!("../resources/small.txt"));
+
+pub const TINY: Corpus = Corpus::from_str("tiny",
     "hello rust goodbye rust");
 
 impl<'a, 'b> Corpus<'a, 'b> {
