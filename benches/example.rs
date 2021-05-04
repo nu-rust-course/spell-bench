@@ -1,8 +1,6 @@
 //! The code in this module demonstrates how to implement the `Corrector`
 //! trait for a `suggest` method that borrows from the model.
 
-#![cfg_attr(feature = "nightly", feature(test))]
-
 /// A simple spelling corrector based on a corpus of only one word.
 mod implementation {
     use std::io::BufRead;
