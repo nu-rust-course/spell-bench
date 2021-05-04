@@ -1,3 +1,5 @@
+//! Test corpora.
+
 #[derive(Clone, Copy)]
 pub struct Corpus<'a, 'b> {
     pub name: &'a str,
@@ -17,5 +19,8 @@ impl<'a, 'b> Corpus<'a, 'b> {
     const fn from_str(name: &'a str, text: &'b str) -> Self {
         Self { name, text, }
     }
-}
 
+    pub const fn as_bytes(self) -> &'b [u8] {
+        self.text.as_bytes()
+    }
+}

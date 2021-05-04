@@ -1,27 +1,32 @@
 //! Benchmarks for the Homework 3 spelling corrector.
 
-#![cfg_attr(feature = "nightly", feature(test))]
-
 pub const N: usize = 10;
 
-#[cfg(feature = "nightly")]
-extern crate test;
+pub use self::{
+    edit::Edit,
+    traits::{
+        tokenizer::{Tokenizer, DefaultTokenizer, BoxIterator},
+        corrector::{Corrector, Correction},
+    },
+};
+pub use criterion;
 
-#[cfg(feature = "nightly")]
-pub use test::Bencher;
+/// A few texts.
+pub mod corpus;
 
-#[cfg(not(feature = "nightly"))]
-pub use benches::MockBencher as Bencher;
+/// A datatype for representing and applying edits.
+pub mod edit;
 
-mod traits;
-pub use traits::{BoxIterator, Correction, Corrector, Tokenizer, DefaultTokenizer};
+mod traits {
+    /// Tokenization code for building the model from the corpus.
+    pub mod tokenizer;
+
+    /// Adaptor API to implement for your corrector model so that the
+    /// benchmarks can construct and exercise it.
+    pub mod corrector;
+}
 
 mod benches;
 pub use benches::CorrectorBenches;
-
-mod edits;
-pub use edits::Edit;
-
-pub mod corpus;
 
 mod macros;

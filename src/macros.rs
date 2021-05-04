@@ -5,9 +5,9 @@ macro_rules! __edit_hamlet {
     ( $name:ident : $e:expr, N = $n:expr ) => {
 
         #[bench]
-        fn $name(bench: &mut $crate::Bencher) {
+        fn $name(c: &mut $crate::Criterion) {
             use __detail::*;
-            <T as CB>::check_hamlet_with_edits($n, &$e, bench);
+            <T as CB>::check_hamlet_bench($n, stringify!($name), $e, c);
         }
 
     };
@@ -79,12 +79,6 @@ macro_rules! __bench_corrector {
             use $crate::Edit;
             use super::{edit_hamlet, __detail};
 
-            edit_hamlet!(first_1: Edit::delete(0));
-            edit_hamlet!(first_2: Edit::delete(0).then(Edit::delete(0)));
-            edit_hamlet!(last_1: Edit::delete(-2));
-            edit_hamlet!(del_last_2: Edit::delete(-2).then(Edit::delete(-2)));
-            edit_hamlet!(del_first_last: Edit::delete(0).then(Edit::delete(-2)));
-
 //            hamlet!(pre_a, N, Pre("a"));
 //            hamlet!(post_t, N, Post("t"));
 //            hamlet!(replace_first_z, N, LSkip(1).and(Pre("z")));
@@ -135,11 +129,10 @@ macro_rules! __process_items {
 ///
 ///         mod deletions {
 ///             use super::*;
-///             edit_hamlet!(first_1: Edit::delete(0));
-///             edit_hamlet!(first_2: Edit::delete(0).then(Edit::delete(0)));
-///             edit_hamlet!(last_1: Edit::delete(-2));
-///             edit_hamlet!(del_last_2: Edit::delete(-2).then(Edit::delete(-2)));
-///             edit_hamlet!(del_first_last: Edit::delete(0).then(Edit::delete(-2)));
+///             edit_hamlet!(del_0: Edit::I.delete(0));
+///             edit_hamlet!(del_0_0: Edit::I.delete(0).delete(0));
+///             edit_hamlet!(del_2: Edit::I.delete(2));
+///             edit_hamlet!(del_4_4: Edit::I.delete(4).delete(2));
 ///         }
 ///     }
 /// }

@@ -1,84 +1,93 @@
-use crate::{Corrector, Tokenizer, Edit};
+use crate::{
+    corpus::{self, Corpus},
+    Corrector,
+    Tokenizer,
+    Edit
+};
+use criterion::{BenchmarkId, Criterion};
 
-/// The text of hamlet. Should be entirely Roman letters and space.
-pub const HAMLET: &[u8] = include_bytes!("../resources/hamlet.txt");
+use std::fmt::Display;
 
 /// Extension trait that implements several benchmark possibilities for
 /// any `Corrector`.
 pub trait CorrectorBenches: Corrector {
-
-    fn read_bytes(bytes: &[u8], bench: &mut impl Bencher) {
-        bench.iter(move || Self::from_corpus(bytes))
+    fn from_corpus_bench(corpus: Corpus, c: &mut Criterion) {
+        let name = &format!("build_corpus_{}", corpus.name);
+        Self::from_bytes_bench(name, corpus.as_bytes(), c);
     }
 
-    fn check_bytes(n: usize, bytes: &[u8], bench: &mut impl Bencher) {
-        Self::check_bytes_with_edits(n, bytes, &Edit::identity(), bench);
+    fn from_bytes_bench(name: &str, bytes: &[u8], c: &mut Criterion) {
+        let id = BenchmarkId::new(name, format!("{}B", bytes.len()));
+        c.bench_with_input(id, &bytes, |b, bytes|
+            b.iter(|| Self::from_corpus(*bytes)));
     }
 
-    fn check_bytes_with_edits(n: usize,
-                              bytes: &[u8],
-                              e: &Edit,
-                              bench: &mut impl Bencher) {
+    fn corpus_check_bench(n: usize, corpus: Corpus, c: &mut Criterion) {
+        Self::corpus_check_with_edit_bench(n, corpus, "identity", Edit::I, c);
+    }
+
+    fn corpus_check_with_edit_bench(
+        n: usize,
+        corpus: Corpus,
+        arg: impl Display,
+        edit: Edit,
+        c: &mut Criterion) {
+
+        let name = corpus.name;
+        let bytes = corpus.as_bytes();
+        Self::bytes_check_with_edit_bench(name, arg, n, bytes, edit, c);
+    }
+
+    fn bytes_check_with_edit_bench(
+        name: &str,
+        arg: impl Display,
+        n: usize,
+        bytes: &[u8],
+        e: Edit,
+        c: &mut Criterion) {
 
         let corrector = Self::from_corpus(bytes);
         let words = Self::Tokens::tokenize(bytes);
-        let skip = words.len() / 2;
-        let problem = words
-            .into_iter()
+        let problem: Vec<String> = words
+            .iter()
+            .map(String::as_str)
             .cycle()
-            .skip(skip)
-            .filter_map(|word| e.apply(word))
+            .skip(words.len() / 2)
+            .map(|word| e.apply(word).collect())
             .take(n)
-            .collect::<Vec<_>>();
+            .collect();
 
-        bench.iter(move ||
-            problem.iter()
+        let id = BenchmarkId::new(name, arg);
+        c.bench_with_input(id, &problem, |b, problem|
+            b.iter(||
+                problem
+                .iter()
                 .filter(|word| corrector.suggest(word).is_suggestion())
-                .count())
+                .count()));
     }
 
-    fn read_hamlet(bench: &mut impl Bencher) {
-        Self::read_bytes(HAMLET, bench);
+    fn build_dict_bench(c: &mut Criterion) {
+        Self::from_corpus_bench(corpus::DICT, c);
     }
 
-    fn check_hamlet_with_edits(n: usize, e: &Edit, bench: &mut impl Bencher) {
-        Self::check_bytes_with_edits(n, HAMLET, e, bench);
+    fn check_dict_bench(n: usize, arg: impl Display, e: Edit, c: &mut Criterion) {
+        Self::corpus_check_with_edit_bench(n, corpus::DICT, arg, e, c);
     }
 
-    fn check_hamlet(n: usize, bench: &mut impl Bencher) {
-        Self::check_bytes(n, HAMLET, bench);
+    fn build_hamlet_bench(c: &mut Criterion) {
+        Self::from_corpus_bench(corpus::HAMLET, c);
     }
 
-}
-
-/// Trait to let us mock `test::Bencher` for testing benchmarks.
-pub trait Bencher {
-    fn iter<T, F>(&mut self, f: F)
-    where
-        F: FnMut() -> T;
-}
-
-#[cfg(feature = "nightly")]
-impl Bencher for test::Bencher {
-    fn iter<T, F>(&mut self, f: F)
-    where
-        F: FnMut() -> T {
-
-        test::Bencher::iter(self, f)
+    fn check_hamlet_bench(n: usize, arg: impl Display, e: Edit, c: &mut Criterion) {
+        Self::corpus_check_with_edit_bench(n, corpus::HAMLET, arg, e, c);
     }
-}
 
-#[derive(Clone, Debug)]
-pub struct MockBencher(pub usize);
+    fn build_small_bench(c: &mut Criterion) {
+        Self::from_corpus_bench(corpus::SMALL, c);
+    }
 
-impl Bencher for MockBencher {
-    fn iter<T, F>(&mut self, mut f: F)
-    where
-        F: FnMut() -> T {
-
-        for _ in 0 .. self.0 {
-            f();
-        }
+    fn check_small_bench(n: usize, arg: impl Display, e: Edit, c: &mut Criterion) {
+        Self::corpus_check_with_edit_bench(n, corpus::SMALL, arg, e, c);
     }
 }
 
@@ -86,27 +95,52 @@ impl<C: Corrector> CorrectorBenches for C { }
 
 #[cfg(test)]
 mod tests {
-    use std::io::BufRead;
-    use crate::{Corrector, Correction, DefaultTokenizer};
     use super::CorrectorBenches;
-    use crate::benches::MockBencher;
+    use crate::{Corrector, Correction, DefaultTokenizer, Edit};
 
-    #[test]
-    fn allow_everything() {
-        struct Always<T>(T);
+    use criterion::Criterion;
 
-        impl<'a> Corrector for Always<Correction<'a>> {
-            fn from_corpus<R: BufRead>(_corpus: R) -> Self {
-                Always(Correction::Correct)
-            }
+    use std::{
+        io::BufRead,
+        time::Duration,
+    };
 
-            fn suggest(&self, _word: &str) -> Correction {
-                self.0.clone()
-            }
+    struct Always(Correction<String>);
 
-            type Tokens = DefaultTokenizer;
+    impl Corrector for Always {
+        fn from_corpus<R: BufRead>(_corpus: R) -> Self {
+            Always(Correction::Correct)
         }
 
-        <Always<Correction>>::check_bytes(100, super::HAMLET, &mut MockBencher(1));
+        type String = String;
+
+        fn suggest(&self, _word: &str) -> Correction<String> {
+            self.0.clone()
+        }
+
+        type Tokens = DefaultTokenizer;
+    }
+
+    fn crit() -> Criterion {
+        Criterion::default()
+            .nresamples(10)
+            .without_plots()
+            .measurement_time(Duration::from_millis(10))
+            .warm_up_time(Duration::from_millis(1))
+    }
+
+    #[test]
+    fn always_build_small_bench() {
+        Always::build_small_bench(&mut crit());
+    }
+
+    #[test]
+    fn always_check_small_bench() {
+        Always::check_small_bench(10, "identity", Edit::I, &mut crit());
+    }
+
+    #[test]
+    fn always_build_hamlet_bench() {
+        Always::build_hamlet_bench(&mut crit());
     }
 }
