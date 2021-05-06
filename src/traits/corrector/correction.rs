@@ -5,10 +5,6 @@ pub enum Correction<S> {
     Suggestion(S)
 }
 
-macro_rules! matches {
-    ($e:expr, $p:pat) => { if let $p = $e {true} else {false} };
-}
-
 impl<S> Correction<S> {
     pub fn from_result(result: Result<S, bool>) -> Self {
         result.map_or_else(Self::no_suggestion, Self::Suggestion)
