@@ -1,4 +1,6 @@
-use std::io::BufRead;
+//! Tokenization code for building the model from the corpus.
+
+use std::borrow::Cow;
 
 pub type BoxIterator<'a, T> = Box<dyn Iterator<Item = T> + 'a>;
 
@@ -6,22 +8,20 @@ pub type BoxIterator<'a, T> = Box<dyn Iterator<Item = T> + 'a>;
 /// differently than I do.
 pub trait Tokenizer {
     /// Reads from `corpus` and returns a vector of all words parsed
-    /// therefrom. You can override this to change how
-    fn tokenize<R: BufRead>(corpus: R) -> Vec<String> {
-        corpus.lines()
-              .fold(Vec::new(), |mut result, line| {
-                  result.extend(Self::split_tokens(&line.unwrap())
-                      .filter(|w| !Self::is_bad_word(w))
-                      .map(Self::finish_word));
-                  result
-              })
+    /// therefrom. You can override this to change how the corpus is
+    /// tokenized and regularized.
+    fn tokenize(corpus: &str) -> Vec<String> {
+        Self::split_tokens(corpus)
+            .filter(|w| !Self::is_bad_word(w))
+            .map(|w| Self::finish_word(w))
+            .collect()
     }
 
     /// Splits a line of text into tokens.
     ///
     /// The default implementation just calls `str::split_whitespace`.
-    fn split_tokens(line: &str) -> BoxIterator<&str> {
-        Box::new(line.split_whitespace())
+    fn split_tokens(line: &str) -> BoxIterator<'_, Cow<'_, str>> {
+        Box::new(line.split_whitespace().map(Cow::Borrowed))
     }
 
     /// Used to filter out words that should not be included in the
@@ -29,7 +29,7 @@ pub trait Tokenizer {
     ///
     /// Default implementation returns `true` for the empty string.
     fn is_bad_word(word: &str) -> bool {
-        word.is_empty()
+        word.is_empty() || !word.is_ascii()
     }
 
     /// Constructs an owned string for the word while performing any
@@ -38,7 +38,7 @@ pub trait Tokenizer {
     /// the word here.
     ///
     /// Default implementation calls `str::to_lowercase`.
-    fn finish_word(word: &str) -> String {
+    fn finish_word(word: Cow<'_, str>) -> String {
         word.to_lowercase()
     }
 }

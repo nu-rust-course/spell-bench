@@ -4,5 +4,9 @@ version = "0.3.0"
 authors = ["Jesse A. Tov <jesse.tov@gmail.com>"]
 edition = "2018"
 
+[[bench]]
+name = "example"
+harness = false
+
 [dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }

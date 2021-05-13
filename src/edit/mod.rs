@@ -1,13 +1,8 @@
-#![allow(unused)]
+//! A datatype for representing and applying edits.
 
-use std::iter::{self, FromIterator};
+use crate::util::StringCursor;
+
 use std::rc::Rc;
-
-mod index;
-use index::Index;
-
-mod string_cursor;
-use string_cursor::StringCursor;
 
 /// An edit to a string.
 #[derive(Debug, Clone)]
@@ -139,7 +134,11 @@ impl Edit {
         Self(node)
     }
 
-    pub fn apply<'a>(&self, original: &'a str) -> Iter<'a> {
+    pub fn apply(&self, original: &str) -> String {
+        self.iter(original).collect()
+    }
+
+    pub fn iter<'a>(&self, original: &'a str) -> Iter<'a> {
         let edit = self.0.as_ref().map(Rc::clone)
             .unwrap_or(Rc::new(EditNode::Copy(0)));
         let cursor = StringCursor::from(original);
@@ -173,7 +172,7 @@ impl EditNode {
         use EditNode::*;
 
         match *self {
-            Lit(c) => {
+            Lit(_) => {
                 let me = Edit::from(self);
                 if i == 0 {
                     (Edit::I, me)
@@ -327,7 +326,7 @@ mod tests {
 
     fn n_edits(n: usize, word: &str, mut f: impl FnMut(usize) -> Edit) -> Vec<String> {
         (0..n as _)
-            .map(|i| f(i).apply(word).collect())
+            .map(|i| f(i).iter(word).collect())
             .collect()
     }
 }

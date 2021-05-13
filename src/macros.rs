@@ -1,176 +1,158 @@
-#[doc(hidden)]
 #[macro_export]
-macro_rules! __edit_hamlet {
-
-    ( $name:ident : $e:expr, N = $n:expr ) => {
-
-        #[bench]
-        fn $name(c: &mut $crate::Criterion) {
-            use __detail::*;
-            <T as CB>::check_hamlet_bench($n, stringify!($name), $e, c);
+macro_rules! spell_bench_default_benches {
+    ($model:ty) => {
+        pub fn model_creation(c: &mut Criterion) {
+            $model::from_corpus_bench(corpus::SMALL, c);
+            $model::from_corpus_bench(corpus::HAMLET, c);
         }
 
-    };
-
-    ( $name:ident : $e:expr ) => {
-        $crate::__edit_hamlet!($name : $e, N = N);
-    };
-
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __check_hamlet {
-    ( $name:ident ) => {
-
-        #[bench]
-        fn $name(bench: &mut $crate::Bencher) {
-            <T as CB>::read_hamlet(bench);
+        pub fn hamlet_corrections(c: &mut Criterion) {
+            $model::check_hamlet_bench(100, "identity",
+                Edit::I, c);
+            $model::check_hamlet_bench(100, "delete 1",
+                Edit::I.delete(1), c);
+            $model::check_hamlet_bench(100, "transpose 2; insert 3 x",
+                Edit::I.transpose(2).insert(3, 'x'),c);
         }
-
-    };
-
-    ( $name:ident, $n:expr ) => {
-
-        #[bench]
-        fn $name(bench: &mut $crate::Bencher) {
-            <T as CB>::check_hamlet($n, bench);
-        }
-
-    };
-
-    ( $name:ident, $n:expr, $e:expr ) => {
-
-        #[bench]
-        fn $name(bench: &mut $crate::Bencher) {
-            <T as CB>::check_hamlet_with_edits($n, $e, bench);
-        }
-
     };
 }
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! __bench_parser {
-    ( ) => {
-
-        mod parse_hamlet {
-            use super::__detail::*;
-
-            hamlet!(read_all);
-        }
-
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __bench_corrector {
-    ( ) => {
-
-//        mod words_from_hamlet {
-//            use super::__detail::*;
-//
-//            hamlet!(_10, 10);
-//            hamlet!(_100, 100);
-//        }
-
-        mod edit_hamlet {
-            use $crate::Edit;
-            use super::{edit_hamlet, __detail};
-
-//            hamlet!(pre_a, N, Pre("a"));
-//            hamlet!(post_t, N, Post("t"));
-//            hamlet!(replace_first_z, N, LSkip(1).and(Pre("z")));
-//            hamlet!(transpose_0, N, Transpose(0));
-//            hamlet!(transpose_1, N, Transpose(1));
-//            hamlet!(transpose_2, N, Transpose(2));
-
-        }
-
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __process_items {
-
+macro_rules! __spell_bench_expand_bench {
+    (
+        fn $group:ident :: $name:ident()
+        $(let { $($before:tt)* } in)?
+        {$($body:tt)*}
+    ) =>
     {
-        $(#[$attr:meta])*
-        $v:vis const N: $t:ty = $n:expr;
-        $($rest:tt)*
-    } => {
-        $(#[$attr])*
-        $v const N: $t = $n;
-        $($rest)*
+        fn $name(__crit: &mut $crate::criterion::Criterion) {
+            let tag = __test_tag(stringify!($group), stringify!($name));
+            __crit.bench_function(&tag, |b| {
+                $($($before)*)?
+                b.iter(|| {$($body)*});
+            });
+        }
     };
-
-    {
-        $($rest:tt)*
-    } => {
-        const N: usize = $crate::N;
-        $($rest)*
-    };
-
 }
 
-/// Runs spell checker benchmarks.
-///
-/// # Example
-///
-/// ```ignore
-/// spell_bench::spell_bench! {
-///     mod benches {
-///         const N: usize = 10;
-///         use super::Corrector;
-///         use spell_bench::Edit;
-///
-///         bench_corrector!();
-///
-///         mod deletions {
-///             use super::*;
-///             edit_hamlet!(del_0: Edit::I.delete(0));
-///             edit_hamlet!(del_0_0: Edit::I.delete(0).delete(0));
-///             edit_hamlet!(del_2: Edit::I.delete(2));
-///             edit_hamlet!(del_4_4: Edit::I.delete(4).delete(2));
-///         }
-///     }
-/// }
-/// ```
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __spell_bench_expand_group {
+    (
+        $group:ident {
+            $(
+                fn $name:ident()
+                $(let {$($before:tt)*} in)?
+                {$($body:tt)*}
+            )*
+        }
+    ) => {
+        pub fn $group() {
+            let _c = &mut $crate::criterion::Criterion::default().configure_from_args();
+            $($name(_c);)*
+            $($crate::__spell_bench_expand_bench! {
+                fn $group::$name()
+                $(let {$($before)*} in)?
+                {$($body)*}
+            })*
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! spell_bench {
-    {
-
-        $(#[$outer:meta])*
-        $v:vis mod $m:ident {
-            $(#![$inner:meta])*
-
-            $($i:tt)*
+    (
+        for $model:ty
+        $(where $(
+                mod $group:ident {$($body:tt)*}
+        )*)?
+    ) => {
+        spell_bench! {
+            mod spell_bench_module for $model
+            $(where $(mod $group {$($body)*})*)?
         }
+    };
 
-    } => {
+    (
+        mod $module:ident for $model:ty
+        $(where $(mod $group:ident {$($body:tt)*})*)?
+    ) => {
+        mod $module {
+            #[allow(unused)]
+            use super::*;
 
-        $(#[$outer])*
-        $v mod $m {
-            $(#![$inner])*
+            // use $crate::{
+            //     Edit,
+            //     CorrectorBench,
+            //     corpus,
+            //     criterion::{
+            //         Criterion,
+            //         criterion_main,
+            //         criterion_group,
+            //     },
+            // };
 
-            use $crate::__edit_hamlet as edit_hamlet;
-            use $crate::__bench_corrector as bench_corrector;
-            use $crate::__bench_parser as bench_parser;
+            // spell_bench_benches!($model);
 
-            mod __detail {
-                pub (super) use $crate::{
-                    CorrectorBenches as CB,
-                    __check_hamlet as hamlet,
-                };
-
-                pub (super) type T = super::Corrector;
-                pub (super) const N: usize = super::N;
+            fn __test_tag(group: &str, name: &str) -> String {
+                format!("{}::{}", group, name)
             }
 
-            $crate::__process_items!($($i)*);
+            pub mod groups {
+                #[allow(unused)]
+                use super::*;
 
+                $($(
+                    $crate::__spell_bench_expand_group! {
+                        $group {$($body)*}
+                    }
+                )*)?
+            }
+
+            // criterion_group! {
+            //     bench_group,
+            //     model_creation,
+            //     hamlet_corrections
+            // }
         }
 
+        $(
+            $crate::criterion::criterion_main! {
+                // $module::bench_group,
+                $($module::groups::$group),*
+            }
+        )?
     };
 }
+
+// spell_bench! {
+//     for correct::model::RomanDirectModel
+//     where
+//         mod meow {
+//             fn generate_and_sum(){
+//                 let v = (0 .. 1 << 20).collect::<Vec<u32>>();
+//                 let u: u32 = v.iter().sum();
+//                 u
+//             }
+
+//             fn generate(){
+//                 let v = (0 .. 1 << 20).collect::<Vec<u32>>();
+//                 v
+//             }
+
+//             fn sum()
+//             let {
+//                 let v = (0 .. 1 << 20).collect::<Vec<u32>>();
+//             } in {
+//                 let u: u32 = v.iter().sum();
+//                 u
+//             }
+//         }
+
+//         mod woof {
+//             fn one() {
+//                 "woof".len()
+//             }
+//         }
+// }

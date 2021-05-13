@@ -1,0 +1,36 @@
+FROM ubuntu:21.04
+
+COPY scripts /scripts
+
+ENV LANG=C.UTF-8 \
+    USER=user
+
+RUN /scripts/install-packages.sh \
+    ca-certificates \
+    curl \
+    gcc-multilib \
+    gcc-10 \
+    libc6-dev \
+    valgrind \
+    zsh \
+ && useradd --create-home --user-group --shell /bin/zsh $USER
+
+ENV HOME=/home/$USER \
+    CC=/usr/bin/gcc-10 \
+    CXX=/usr/bin/g++-10
+COPY --chown=$USER home/ $HOME
+
+RUN ln -s $CC /usr/local/bin/cc \
+ && ln -s $CXX /usr/local/bin/cxx
+
+USER $USER
+WORKDIR $HOME
+
+RUN host=https://static.rust-lang.org \
+  ; url=$host/rustup/dist/x86_64-unknown-linux-gnu/rustup-init \
+  ; curl --proto '=https' --tlsv1.2 -sSf $url >rustup-init \
+ && chmod +x rustup-init \
+ && ./rustup-init -y --profile minimal --default-toolchain nightly \
+ && rm -f rustup-init
+
+CMD ["/bin/zsh"]
